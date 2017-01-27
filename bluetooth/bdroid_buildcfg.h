@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ *  Copyright (c) 2019, The Linux Foundation. All rights reserved.
  *  Not a Contribution, Apache license notifications and license are retained
  *  for attribution purposes only.
  *
@@ -21,7 +21,28 @@
 
 #ifndef _BDROID_BUILDCFG_H
 #define _BDROID_BUILDCFG_H
-#define BTM_DEF_LOCAL_NAME   "QCOM-BTD"
+
+#include <cutils/properties.h>
+
+static inline const char* BtmGetDefaultName()
+{
+    int32_t rf_version = property_get_int32("ro.boot.rf_version", 0);
+
+    switch (rf_version) {
+    case 11:
+    case 21:
+    case 31:
+        return "OnePlus 3";
+    case 12:
+    case 22:
+    case 32:
+        return "OnePlus 3T";
+    }
+
+    return "";
+}
+
+#define BTM_DEF_LOCAL_NAME BtmGetDefaultName()
 // Disables read remote device feature
 #define MAX_ACL_CONNECTIONS   16
 #define MAX_L2CAP_CHANNELS    16
