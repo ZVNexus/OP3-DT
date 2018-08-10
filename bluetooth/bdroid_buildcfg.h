@@ -41,6 +41,7 @@ static inline const char* BtmGetDefaultName()
 
     return "";
 }
+#undef PROPERTY_VALUE_MAX
 
 #define BTM_DEF_LOCAL_NAME BtmGetDefaultName()
 // Disables read remote device feature
