@@ -1,14 +1,7 @@
 ALLOW_MISSING_DEPENDENCIES=true
-TARGET_USES_AOSP := true
-TARGET_USES_AOSP_FOR_AUDIO := false
-TARGET_USES_QCOM_BSP := false
 
-ifeq ($(TARGET_USES_AOSP),true)
-TARGET_DISABLE_DASH := true
-endif
-
-DEVICE_PACKAGE_OVERLAYS := device/qcom/msm8996/overlay
-TARGET_ENABLE_QC_AV_ENHANCEMENTS := true
+DEVICE_PACKAGE_OVERLAYS := $(LOCAL_PATH)/overlay
+#TARGET_ENABLE_QC_AV_ENHANCEMENTS := true
 
 # Default vendor configuration.
 ifeq ($(ENABLE_VENDOR_IMAGE),)
@@ -36,14 +29,14 @@ TARGET_KERNEL_VERSION := 3.18
 PRODUCT_PROPERTY_OVERRIDES += \
     qemu.hw.mainkeys=0
 
-ifneq ($(TARGET_DISABLE_DASH), true)
-    PRODUCT_BOOT_JARS += qcmediaplayer
-endif
+#ifneq ($(TARGET_DISABLE_DASH), true)
+#    PRODUCT_BOOT_JARS += qcmediaplayer
+#endif
 
 # video seccomp policy files
 PRODUCT_COPY_FILES += \
-    device/qcom/msm8996/seccomp/mediacodec-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy \
-    device/qcom/msm8996/seccomp/mediaextractor-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediaextractor.policy
+    $(LOCAL_PATH)/seccomp/mediacodec-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy \
+    $(LOCAL_PATH)/seccomp/mediaextractor-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediaextractor.policy
 
 # Enable features in video HAL that can compile only on this platform
 TARGET_USES_MEDIA_EXTENSIONS := true
@@ -51,12 +44,12 @@ TARGET_USES_MEDIA_EXTENSIONS := true
 # copy customized media_profiles and media_codecs xmls for msm8996
 ifeq ($(TARGET_ENABLE_QC_AV_ENHANCEMENTS), true)
 PRODUCT_COPY_FILES += \
-    device/qcom/msm8996/media_profiles.xml:system/etc/media_profiles.xml \
-    device/qcom/msm8996/media_profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_vendor.xml \
-    device/qcom/msm8996/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
-    device/qcom/msm8996/media_codecs_vendor.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_vendor.xml \
-    device/qcom/msm8996/media_codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
-    device/qcom/msm8996/media_codecs_vendor_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_vendor_audio.xml
+    $(LOCAL_PATH)/media_profiles.xml:system/etc/media_profiles.xml \
+    $(LOCAL_PATH)/media_profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_vendor.xml \
+    $(LOCAL_PATH)/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
+    $(LOCAL_PATH)/media_codecs_vendor.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_vendor.xml \
+    $(LOCAL_PATH)/media_codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
+    $(LOCAL_PATH)/media_codecs_vendor_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_vendor_audio.xml
 endif  #TARGET_ENABLE_QC_AV_ENHANCEMENTS
 
 # Power
@@ -65,14 +58,35 @@ PRODUCT_PACKAGES += \
     android.hardware.power@1.0-impl
 
 # Override heap growth limit due to high display density on device
-PRODUCT_PROPERTY_OVERRIDES += \
-    dalvik.vm.heapgrowthlimit=256m
-$(call inherit-product, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
-$(call inherit-product, device/qcom/common/common64.mk)
+#PRODUCT_PROPERTY_OVERRIDES += \
+#    dalvik.vm.heapgrowthlimit=256m
+$(call inherit-product, vendor/statix/config/dalvik/phone-xxhdpi-4096-dalvik-heap.mk)
+$(call inherit-product, vendor/statix/config/dalvik/phone-xxhdpi-2048-hwui-memory.mk)
 
 #msm8996 platform WLAN Chipset
 WLAN_CHIPSET := qca_cld
 
+# Display/Graphics
+PRODUCT_PACKAGES += \
+    copybit.msm8996 \
+    gralloc.msm8996 \
+    hwcomposer.msm8996 \
+    memtrack.msm8996 \
+    libdisplayconfig \
+    liboverlay \
+    libqdMetaData.system \
+    libtinyxml \
+    android.hardware.graphics.allocator@2.0-impl \
+    android.hardware.graphics.allocator@2.0-service \
+    android.hardware.graphics.mapper@2.0-impl \
+    android.hardware.graphics.composer@2.1-impl \
+    android.hardware.graphics.composer@2.1-service \
+    android.hardware.memtrack@1.0-impl \
+    android.hardware.memtrack@1.0-service \
+    android.hardware.configstore@1.0-service \
+    android.hardware.broadcastradio@1.0-impl \
+    vendor.display.color@1.0-service \
+    vendor.display.color@1.0-impl
 
 # system prop for opengles version
 #
@@ -82,62 +96,58 @@ WLAN_CHIPSET := qca_cld
 PRODUCT_PROPERTY_OVERRIDES  += \
     ro.opengles.version=196610
 
-PRODUCT_NAME := msm8996
-PRODUCT_DEVICE := msm8996
-PRODUCT_BRAND := Android
-PRODUCT_MODEL := MSM8996 for arm64
+# Display calibration
+PRODUCT_PACKAGES += \
+    FOSSConfig.xml \
+    qdcm_calib_data_samsung_s6e3fa3_1080p_cmd_mode_dsi_panel.xml \
+    qdcm_calib_data_samsung_s6e3fa5_1080p_cmd_mode_dsi_panel.xml
 
-PRODUCT_BOOT_JARS += tcmiface
-PRODUCT_BOOT_JARS += telephony-ext
+# TELEPHONY
+PRODUCT_PACKAGES += \
+    ims-ext-common \
+    telephony-ext
 
-PRODUCT_PACKAGES += telephony-ext
+PRODUCT_BOOT_JARS += \
+    telephony-ext
 
-ifneq ($(strip $(QCPATH)),)
-PRODUCT_BOOT_JARS += WfdCommon
-#PRODUCT_BOOT_JARS += com.qti.dpmframework
-#PRODUCT_BOOT_JARS += dpmapi
-#PRODUCT_BOOT_JARS += com.qti.location.sdk
-#Android oem shutdown hook
-PRODUCT_BOOT_JARS += oem-services
-endif
+# WFD
+PRODUCT_PACKAGES += \
+    libaacwrapper \
+    libnl
 
-DEVICE_MANIFEST_FILE := device/qcom/msm8996/manifest.xml
-DEVICE_MATRIX_FILE   := device/qcom/common/compatibility_matrix.xml
-DEVICE_FRAMEWORK_MANIFEST_FILE := device/qcom/msm8996/framework_manifest.xml
+PRODUCT_BOOT_JARS += \
+    WfdCommon
 
-#Android EGL implementation
-PRODUCT_PACKAGES += libGLES_android
+DEVICE_MANIFEST_FILE := $(LOCAL_PATH)/hidl/manifest.xml
+DEVICE_MATRIX_FILE   := $(LOCAL_PATH)/hidl/compatibility_matrix.xml
+DEVICE_FRAMEWORK_MANIFEST_FILE := $(LOCAL_PATH)/hidl/framework_manifest.xml
 
 # Audio configuration file
 -include $(TOPDIR)hardware/qcom/audio/configs/msm8996/msm8996.mk
 
-# WLAN driver configuration files
+# WIFI
+PRODUCT_PACKAGES += \
+    ipacm \
+    IPACM_cfg.xml \
+    libqsap_sdk \
+    libQWiFiSoftApCfg \
+    libwpa_client \
+    hostapd \
+    wificond \
+    wifilogd \
+    wpa_supplicant \
+    wpa_supplicant.conf
+
 PRODUCT_COPY_FILES += \
-    device/qcom/msm8996/WCNSS_qcom_cfg.ini:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/WCNSS_qcom_cfg.ini
+    $(LOCAL_PATH)/wifi/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf \
+    $(LOCAL_PATH)/wifi/wpa_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant_overlay.conf
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/wifi/WCNSS_qcom_cfg.ini:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/WCNSS_qcom_cfg.ini
 
 # MIDI feature
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.software.midi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.midi.xml
-
-PRODUCT_PACKAGES += \
-    wpa_supplicant_overlay.conf \
-    p2p_supplicant_overlay.conf
-
-
-#for wlan
-PRODUCT_PACKAGES += \
-    wificond \
-    wifilogd
-ifneq ($(WLAN_CHIPSET),)
-PRODUCT_PACKAGES += $(WLAN_CHIPSET)_wlan.ko
-endif
-
-#ANT+ stack
-PRODUCT_PACKAGES += \
-    AntHalService \
-    libantradio \
-    antradio_app \
-    libvolumelistener
 
 # Display/Graphics
 PRODUCT_PACKAGES += \
@@ -156,25 +166,28 @@ PRODUCT_PACKAGES += \
     vendor.display.color@1.0-service \
     vendor.display.color@1.0-impl
 
+# DRM
+PRODUCT_PACKAGES += \
+    android.hardware.drm@1.0-impl \
+    android.hardware.drm@1.0-service \
+    android.hardware.drm@1.1-service.clearkey
+
+# Fingerprint sensor
+PRODUCT_PACKAGES += \
+    android.hardware.biometrics.fingerprint@2.1-service
+
 # Vibrator
 PRODUCT_PACKAGES += \
     android.hardware.vibrator@1.0-impl \
     android.hardware.vibrator@1.0-service \
 
-# Sensor HAL conf file
-PRODUCT_COPY_FILES += \
-    device/qcom/msm8996/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
-
-# VB xml
-PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.software.verified_boot.xml:system/etc/permissions/android.software.verified_boot.xml
-
-# Camera configuration file. Shared by passthrough/binderized camera HAL
-PRODUCT_PACKAGES += camera.device@3.2-impl
-PRODUCT_PACKAGES += camera.device@1.0-impl
-PRODUCT_PACKAGES += android.hardware.camera.provider@2.4-impl
-# Enable binderized camera HAL
-PRODUCT_PACKAGES += android.hardware.camera.provider@2.4-service
+# CAMERA
+PRODUCT_PACKAGES += \
+    Snap \
+    libcamera_parameters_shim \
+    libcamera_shim \
+    android.hardware.camera.provider@2.4-impl \
+    android.hardware.camera.provider@2.4-service.oneplus3
 
 # Sensor features
 PRODUCT_COPY_FILES += \
@@ -190,13 +203,6 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.sensor.relative_humidity.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.sensor.relative_humidity.xml \
     frameworks/native/data/etc/android.hardware.sensor.hifi_sensors.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.sensor.hifi_sensors.xml
 
-# dm-verity configuration
-PRODUCT_SUPPORTS_VERITY := true
-PRODUCT_SYSTEM_VERITY_PARTITION := /dev/block/bootdevice/by-name/system
-ifeq ($(ENABLE_VENDOR_IMAGE), true)
-PRODUCT_VENDOR_VERITY_PARTITION := /dev/block/bootdevice/by-name/vendor
-endif
-
 #FEATURE_OPENGLES_EXTENSION_PACK support string config file
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.opengles.aep.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.opengles.aep.xml
@@ -205,87 +211,72 @@ PRODUCT_COPY_FILES += \
 #PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.vr.high_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vr.high_performance.xml
 
-# MSM IRQ Balancer configuration file
-PRODUCT_COPY_FILES += \
-    device/qcom/msm8996/msm_irqbalance.conf:$(TARGET_COPY_OUT_VENDOR)/etc/msm_irqbalance.conf
-
-PRODUCT_PROPERTY_OVERRIDES += \
-    camera.disable_zsl_mode=1
-
-# List of AAPT configurations
-PRODUCT_AAPT_CONFIG += xlarge large
+# Device uses high-density artwork where available
+PRODUCT_AAPT_CONFIG := normal
+PRODUCT_AAPT_PREF_CONFIG := xxhdpi
 
 # Powerhint configuration file
 PRODUCT_COPY_FILES += \
-device/qcom/msm8996/powerhint.xml:system/etc/powerhint.xml
+$(LOCAL_PATH)/configs/powerhint.xml:system/etc/powerhint.xml
 
-#Healthd packages
-PRODUCT_PACKAGES += android.hardware.health@2.0-impl \
-                   android.hardware.health@2.0-service \
-                   libhealthd.msm
-
-PRODUCT_FULL_TREBLE_OVERRIDE := true
-
-PRODUCT_VENDOR_MOVE_ENABLED := true
-
-#for android_filesystem_config.h
+# HEALTHD
 PRODUCT_PACKAGES += \
-    fs_config_files
+    android.hardware.health@2.0-impl \
+    android.hardware.health@2.0-service
 
-# Add the overlay path
-#PRODUCT_PACKAGE_OVERLAYS := $(QCPATH)/qrdplus/Extension/res \
-        $(PRODUCT_PACKAGE_OVERLAYS)
-
-#-include $(QCPATH)/common/config/rendering-engine.mk
-#ifneq (,$(strip $(wildcard $(PRODUCT_RENDERING_ENGINE_REVLIB))))
-#        MULTI_LANG_ENGINE := REVERIE
-#endif
-
+# NET
 PRODUCT_PACKAGES += \
+    android.system.net.netd@1.0 \
     libandroid_net \
-    libandroid_net_32
+    netutils-wrapper-1.0
 
 #Enable Lights Impl HAL Compilation
-PRODUCT_PACKAGES += android.hardware.light@2.0-impl
-
-TARGET_SUPPORT_SOTER := true
-
-#set KMGK_USE_QTI_SERVICE to true to enable QTI KEYMASTER and GATEKEEPER HIDLs
-ifeq ($(ENABLE_VENDOR_IMAGE), true)
-KMGK_USE_QTI_SERVICE := true
-endif
+PRODUCT_PACKAGES += \
+    lights.msm8996 \
+    android.hardware.light@2.0-impl \
+    android.hardware.light@2.0-service
 
 #Enable AOSP KEYMASTER and GATEKEEPER HIDLs
-ifneq ($(KMGK_USE_QTI_SERVICE), true)
-PRODUCT_PACKAGES += android.hardware.gatekeeper@1.0-impl \
-                    android.hardware.gatekeeper@1.0-service \
-                    android.hardware.keymaster@3.0-impl \
-                    android.hardware.keymaster@3.0-service
-endif
+PRODUCT_PACKAGES += \
+    android.hardware.gatekeeper@1.0-impl \
+    android.hardware.gatekeeper@1.0-service \
+    android.hardware.keymaster@3.0-impl \
+    android.hardware.keymaster@3.0-service
 
-# Defined the locales
-PRODUCT_LOCALES += th_TH vi_VN tl_PH hi_IN ar_EG ru_RU tr_TR pt_BR bn_IN mr_IN ta_IN te_IN zh_HK \
-        in_ID my_MM km_KH sw_KE uk_UA pl_PL sr_RS sl_SI fa_IR kn_IN ml_IN ur_IN gu_IN or_IN
+# HIDL
+PRODUCT_PACKAGES += \
+    android.hidl.base@1.0 \
+    android.hidl.manager@1.0 \
+    android.hidl.manager@1.0-java
 
-PRODUCT_PROPERTY_OVERRIDES += rild.libpath=/system/vendor/lib64/libril-qc-qmi-1.so
+# IPv6
+PRODUCT_PACKAGES += \
+    ebtables \
+    ethertypes
 
-ifeq ($(ENABLE_AB),true)
-#A/B related packages
-PRODUCT_PACKAGES += update_engine \
-                   update_engine_client \
-                   update_verifier \
-                   bootctrl.msm8996 \
-                   brillo_update_payload \
-                   android.hardware.boot@1.0-impl \
-                   android.hardware.boot@1.0-service
-#Boot control HAL test app
-PRODUCT_PACKAGES_DEBUG += bootctl
-endif
+# IRSC
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/sec_config:$(TARGET_COPY_OUT_VENDOR)/etc/sec_config
 
-TARGET_MOUNT_POINTS_SYMLINKS := false
+# GPS
+PRODUCT_PACKAGES += \
+    libcurl \
+    libgnss \
+    libgnsspps \
+    libsensorndkbridge \
+    android.hardware.gnss@1.0-impl-qti
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/gps/etc/flp.conf:$(TARGET_COPY_OUT_VENDOR)/etc/flp.conf \
+    $(LOCAL_PATH)/gps/etc/gps.conf:$(TARGET_COPY_OUT_VENDOR)/etc/gps.conf \
+    $(LOCAL_PATH)/gps/etc/izat.conf:$(TARGET_COPY_OUT_VENDOR)/etc/izat.conf \
+    $(LOCAL_PATH)/gps/etc/lowi.conf:$(TARGET_COPY_OUT_VENDOR)/etc/lowi.conf \
+    $(LOCAL_PATH)/gps/etc/sap.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sap.conf \
+    $(LOCAL_PATH)/gps/etc/xtwifi.conf:$(TARGET_COPY_OUT_VENDOR)/etc/xtwifi.conf
 
 # system prop for Bluetooth SOC type
 PRODUCT_PROPERTY_OVERRIDES += \
+    qcom.bluetooth.soc=rome \
     vendor.qcom.bluetooth.soc=rome
 
 # Set this true as ROME which is programmed
@@ -299,12 +290,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.bluetooth.wipower=true \
     ro.vendor.bluetooth.wipower=true
 
-#Thermal
-PRODUCT_PACKAGES += android.hardware.thermal@1.0-impl \
-                    android.hardware.thermal@1.0-service
+# Thermal
+PRODUCT_PACKAGES += \
+    thermal.msm8996 \
+    android.hardware.thermal@1.0-impl \
+    android.hardware.thermal@1.0-service
 
-SDM660_DISABLE_MODULE := true
-
-# Enable extra vendor libs
-ENABLE_EXTRA_VENDOR_LIBS := true
-PRODUCT_PACKAGES += vendor-extra-libs
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/thermal-engine.conf:$(TARGET_COPY_OUT_VENDOR)/etc/thermal-engine.conf \
+    $(LOCAL_PATH)/configs/thermal-engine-vr.conf:$(TARGET_COPY_OUT_VENDOR)/etc/thermal-engine-vr.conf
